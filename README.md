@@ -29,6 +29,10 @@ The full solution is to use that internal, barely documented, APIs. This reposit
 * [win32-iocp-events.h](win32-iocp-events.h) and [win32-iocp-events.cpp](win32-iocp-events.cpp) abstracts the NT functions
 * [example.cpp](example.cpp) shows how are they used by processing 2048 events by a single thread
 
+## Notes
+
+* The API supports waiting for Semaphores, Threads and Processes, not just Events.
+
 ## Resources
 
 * [All Windows threadpool waits can now be handled by a single thread](https://devblogs.microsoft.com/oldnewthing/20220406-00/?p=106434).
