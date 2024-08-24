@@ -7,12 +7,16 @@
 //  - associates Event with I/O Completion Port and requests a completion packet when signalled
 //  - parameters order modelled after PostQueuedCompletionStatus
 //  - parameters: hIOCP - handle to I/O Completion Port
-//                hEvent - handle to the Event object
+//                hEvent - handle to the Event Object or a Semaphore Object
+//                       - NOTE: Mutex is not supported, it makes no sense in this context
 //                dwNumberOfBytesTransferred - user-specified value, provided back by GetQueuedCompletionStatus(Ex)
 //                dwCompletionKey - user-specified value, provided back by GetQueuedCompletionStatus(Ex)
 //                lpOverlapped - user-specified value, provided back by GetQueuedCompletionStatus(Ex)
 //  - returns: I/O Packet HANDLE for the association
-//             NULL on failure, call GetLastError () for details (TBD)
+//             NULL on failure, call GetLastError () for details
+//              - ERROR_INVALID_PARAMETER - 
+//              - ERROR_INVALID_HANDLE - provided hEvent is not supported by this API
+//              - otherwise internal HRESULT is forwarded
 //  - call CloseHandle to free the returned I/O Packet HANDLE when no longer needed
 //
 _Ret_maybenull_
@@ -31,7 +35,7 @@ HANDLE WINAPI ReportEventAsCompletion (_In_ HANDLE hIOCP,
 //  - returns: TRUE on success
 //             FALSE on failure, call GetLastError () for details (TBD)
 //
-BOOL WINAPI RestartEventCompletion (_In_ HANDLE hPacket, _In_ HANDLE hIOCP, _In_ HANDLE hEvent, _In_ OVERLAPPED_ENTRY * oEntry);
+BOOL WINAPI RestartEventCompletion (_In_ HANDLE hPacket, _In_ HANDLE hIOCP, _In_ HANDLE hEvent, _In_ const OVERLAPPED_ENTRY * oEntry);
 
 // CancelEventCompletion
 //  - stops the Event from completing into the I/O Completion Port

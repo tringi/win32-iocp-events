@@ -1,5 +1,8 @@
 #include "win32-iocp-events.h"
 #include <Winternl.h>
+#include <ntstatus.h>
+
+#pragma warning (disable:4005) // macro redefinition
 
 extern "C" {
     WINBASEAPI NTSTATUS WINAPI NtCreateWaitCompletionPacket (
@@ -23,15 +26,6 @@ extern "C" {
     );
 }
 
-namespace {
-    DWORD WIN32_FROM_HRESULT (HRESULT hr) {
-        if ((hr & 0xFFFF0000) == MAKE_HRESULT (SEVERITY_ERROR, FACILITY_WIN32, 0)) {
-            return HRESULT_CODE (hr);
-        } else
-            return hr;
-    }
-}
-
 _Ret_maybenull_
 HANDLE WINAPI ReportEventAsCompletion (_In_ HANDLE hIOCP, _In_ HANDLE hEvent,
                                        _In_opt_ DWORD dwNumberOfBytesTransferred, _In_opt_ ULONG_PTR dwCompletionKey, _In_opt_ LPOVERLAPPED lpOverlapped) {
@@ -50,12 +44,23 @@ HANDLE WINAPI ReportEventAsCompletion (_In_ HANDLE hIOCP, _In_ HANDLE hEvent,
             hPacket = NULL;
         }
     } else {
-        SetLastError (WIN32_FROM_HRESULT (hr));
+        switch (hr) {
+            case STATUS_NO_MEMORY:
+                SetLastError (ERROR_OUTOFMEMORY);
+                break;
+            default:
+                SetLastError (hr);
+        }
     }
     return hPacket;
 }
 
-BOOL WINAPI RestartEventCompletion (_In_ HANDLE hPacket, _In_ HANDLE hIOCP, _In_ HANDLE hEvent, _In_ OVERLAPPED_ENTRY * completion) {
+BOOL WINAPI RestartEventCompletion (_In_ HANDLE hPacket, _In_ HANDLE hIOCP, _In_ HANDLE hEvent, _In_ const OVERLAPPED_ENTRY * completion) {
+    if (!completion) {
+        SetLastError (ERROR_INVALID_PARAMETER);
+        return FALSE;
+    }
+
     BOOLEAN AlreadySignalled;
     HRESULT hr = NtAssociateWaitCompletionPacket (hPacket, hIOCP, hEvent,
                                                   (PVOID) completion->lpCompletionKey,
@@ -63,10 +68,30 @@ BOOL WINAPI RestartEventCompletion (_In_ HANDLE hPacket, _In_ HANDLE hIOCP, _In_
                                                   completion->dwNumberOfBytesTransferred, &AlreadySignalled);
     if (SUCCEEDED (hr)) {
         return TRUE;
+
     } else {
-        SetLastError (WIN32_FROM_HRESULT (hr));
+        switch (hr) {
+            case STATUS_NO_MEMORY:
+                SetLastError (ERROR_OUTOFMEMORY);
+                break;
+            case STATUS_INVALID_HANDLE: // not valid handle passed for hIOCP
+            case STATUS_OBJECT_TYPE_MISMATCH: // incorrect handle passed for hIOCP
+            case STATUS_INVALID_PARAMETER_1:
+            case STATUS_INVALID_PARAMETER_2:
+                SetLastError (ERROR_INVALID_PARAMETER);
+                break;
+            case STATUS_INVALID_PARAMETER_3:
+                if (hEvent) {
+                    SetLastError (ERROR_INVALID_HANDLE);
+                } else {
+                    SetLastError (ERROR_INVALID_PARAMETER);
+                }
+                break;
+            default:
+                SetLastError (hr);
+        }
+        return FALSE;
     }
-    return FALSE;
 }
 
 BOOL WINAPI CancelEventCompletion (_In_ HANDLE hWait, _In_ BOOL cancel) {
@@ -74,7 +99,7 @@ BOOL WINAPI CancelEventCompletion (_In_ HANDLE hWait, _In_ BOOL cancel) {
     if (SUCCEEDED (hr)) {
         return TRUE;
     } else {
-        SetLastError (WIN32_FROM_HRESULT (hr));
+        SetLastError (hr);
         return FALSE;
     }
 }
