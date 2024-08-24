@@ -23,15 +23,18 @@ extern "C" {
     );
 }
 
-DWORD WIN32_FROM_HRESULT (HRESULT hr) {
-    if ((hr & 0xFFFF0000) == MAKE_HRESULT (SEVERITY_ERROR, FACILITY_WIN32, 0)) {
-        return HRESULT_CODE (hr);
-    } else
-        return hr;
+namespace {
+    DWORD WIN32_FROM_HRESULT (HRESULT hr) {
+        if ((hr & 0xFFFF0000) == MAKE_HRESULT (SEVERITY_ERROR, FACILITY_WIN32, 0)) {
+            return HRESULT_CODE (hr);
+        } else
+            return hr;
+    }
 }
 
-HANDLE WINAPI ReportEventAsCompletion (HANDLE hIOCP, HANDLE hEvent,
-                                       DWORD dwNumberOfBytesTransferred, ULONG_PTR dwCompletionKey, LPOVERLAPPED lpOverlapped) {
+_Ret_maybenull_
+HANDLE WINAPI ReportEventAsCompletion (_In_ HANDLE hIOCP, _In_ HANDLE hEvent,
+                                       _In_opt_ DWORD dwNumberOfBytesTransferred, _In_opt_ ULONG_PTR dwCompletionKey, _In_opt_ LPOVERLAPPED lpOverlapped) {
     HANDLE hPacket = NULL;
     HRESULT hr = NtCreateWaitCompletionPacket (&hPacket, GENERIC_ALL, NULL);
 
@@ -52,7 +55,7 @@ HANDLE WINAPI ReportEventAsCompletion (HANDLE hIOCP, HANDLE hEvent,
     return hPacket;
 }
 
-BOOL WINAPI RestartEventCompletion (HANDLE hPacket, HANDLE hIOCP, HANDLE hEvent, OVERLAPPED_ENTRY * completion) {
+BOOL WINAPI RestartEventCompletion (_In_ HANDLE hPacket, _In_ HANDLE hIOCP, _In_ HANDLE hEvent, _In_ OVERLAPPED_ENTRY * completion) {
     BOOLEAN AlreadySignalled;
     HRESULT hr = NtAssociateWaitCompletionPacket (hPacket, hIOCP, hEvent,
                                                   (PVOID) completion->lpCompletionKey,
@@ -66,7 +69,7 @@ BOOL WINAPI RestartEventCompletion (HANDLE hPacket, HANDLE hIOCP, HANDLE hEvent,
     return FALSE;
 }
 
-BOOL WINAPI CancelEventCompletion (HANDLE hWait, BOOL cancel) {
+BOOL WINAPI CancelEventCompletion (_In_ HANDLE hWait, _In_ BOOL cancel) {
     HRESULT hr = NtCancelWaitCompletionPacket (hWait, cancel);
     if (SUCCEEDED (hr)) {
         return TRUE;
