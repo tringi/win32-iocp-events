@@ -7,7 +7,7 @@
 //  - associates Event with I/O Completion Port and requests a completion packet when signalled
 //  - parameters order modelled after PostQueuedCompletionStatus
 //  - parameters: hIOCP - handle to I/O Completion Port
-//                hEvent - handle to the Event Object or a Semaphore Object
+//                hEvent - handle to Event, Semaphore, Thread or Process
 //                       - NOTE: Mutex is not supported, it makes no sense in this context
 //                dwNumberOfBytesTransferred - user-specified value, provided back by GetQueuedCompletionStatus(Ex)
 //                dwCompletionKey - user-specified value, provided back by GetQueuedCompletionStatus(Ex)
