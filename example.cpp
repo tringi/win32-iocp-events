@@ -81,7 +81,7 @@ int main (int argc, char ** argv) {
     SetLastError (0);
     hQuit = CreateEvent (NULL, TRUE, FALSE, NULL);
 
-    if (auto hIOCP = CreateIoCompletionPort (INVALID_HANDLE_VALUE, NULL, 0x1234, 0)) {
+    if (auto hIOCP = CreateIoCompletionPort (INVALID_HANDLE_VALUE, NULL, 0, 0)) {
 
         // create a lot of events
 
