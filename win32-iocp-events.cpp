@@ -61,11 +61,10 @@ BOOL WINAPI RestartEventCompletion (_In_ HANDLE hPacket, _In_ HANDLE hIOCP, _In_
         return FALSE;
     }
 
-    BOOLEAN AlreadySignalled;
     HRESULT hr = NtAssociateWaitCompletionPacket (hPacket, hIOCP, hEvent,
                                                   (PVOID) completion->lpCompletionKey,
                                                   (PVOID) completion->lpOverlapped, 0,
-                                                  completion->dwNumberOfBytesTransferred, &AlreadySignalled);
+                                                  completion->dwNumberOfBytesTransferred, NULL);
     if (SUCCEEDED (hr)) {
         return TRUE;
 
