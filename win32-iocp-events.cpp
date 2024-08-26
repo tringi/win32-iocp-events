@@ -1,8 +1,8 @@
+#pragma warning (disable:4005) // macro redefinition
+
 #include "win32-iocp-events.h"
 #include <Winternl.h>
 #include <ntstatus.h>
-
-#pragma warning (disable:4005) // macro redefinition
 
 extern "C" {
     WINBASEAPI NTSTATUS WINAPI NtCreateWaitCompletionPacket (
