@@ -12,7 +12,7 @@ But [WaitForMultipleObjects](https://learn.microsoft.com/en-us/windows/win32/api
 64 ([MAXIMUM_WAIT_OBJECTS](https://stackoverflow.com/questions/5131807/is-maximum-wait-objects-really-64)).
 To work around this limit, programs have to resolve to various complicated solutions, like starting multiple threads, refactor their logic, etc.
 
-## The limited solution
+## The old, limited solutions
 
 Up until Windows 8 the [Thread Pool API](https://learn.microsoft.com/en-us/windows/win32/procthread/thread-pool-api)
 [wait operation](https://learn.microsoft.com/en-us/windows/win32/api/threadpoolapiset/nf-threadpoolapiset-createthreadpoolwait)
@@ -22,16 +22,18 @@ too used multiple threads. This is inefficient so it was refactored to use inter
 You can now wait for thousands of events, but only in a threadpool.
 If your program for some reason can't (isn't thread-safe, or uses own IOCP), you were out of luck.
 
-## The full solution
+## The new, proper solution
 
-The full solution is to use that internal, barely documented, APIs. This repository shows how.
+The full solution is to use that internal, barely documented, APIs. This repository shows how in several examples:
 
 * [win32-iocp-events.h](win32-iocp-events.h) and [win32-iocp-events.cpp](win32-iocp-events.cpp) abstracts the NT functions
-* [example.cpp](example.cpp) shows how are they used by processing 2048 events by a single thread
+* [example.cpp](example.cpp) shows how are they used directly by processing 2048 events on a single thread
+* [WaitForUnlimitedObjectsEx.cpp](WaitForUnlimitedObjectsEx.cpp) is almost direct replacement of WaitForMultipleObjectsEx (but quite inefficient)
 
 ## Notes
 
 * The API supports waiting for Semaphores, Threads and Processes, not just Events.
+* The API does NOT support waiting for ALL object to be set at the same time.
 
 ## Resources
 
