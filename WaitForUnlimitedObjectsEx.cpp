@@ -112,6 +112,8 @@ BOOL WINAPI WaitForUnlimitedObjectsEx (
             CloseHandle (hIOCP);
         }
         HeapFree (GetProcessHeap (), 0, hPackets);
+    } else {
+        SetLastError (ERROR_OUTOFMEMORY);
     }
     if (!bResult && dwError) {
         SetLastError (dwError);
