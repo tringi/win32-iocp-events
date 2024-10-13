@@ -26,13 +26,29 @@ If your program for some reason can't (isn't thread-safe, or uses own IOCP), you
 
 The full solution is to use that internal, barely documented, APIs. This repository shows how in several examples:
 
-* [win32-iocp-events.h](win32-iocp-events.h) and [win32-iocp-events.cpp](win32-iocp-events.cpp) abstracts the NT functions
-* [example.cpp](example.cpp) shows how are they used directly by processing 2048 events on a single thread
-* [WaitForUnlimitedObjectsEx.cpp](WaitForUnlimitedObjectsEx.cpp) is almost direct replacement of WaitForMultipleObjectsEx (but quite inefficient)
+**[ReportEventAsCompletion](win32-iocp-events.h) set of APIs**  
+implemented in [win32-iocp-events.cpp](win32-iocp-events.cpp) are direct simple abstractions of the NT functions.
+These offer full control and are proper solution if the application already uses IOCPs.
+
+* [example.cpp](example.cpp) shows how are they used directly by processing large number of events on a single thread
+
+**[WaitForUnlimitedObjectsEx.h](WaitForUnlimitedObjectsEx.h)**  
+is almost direct replacement of WaitForMultipleObjectsEx, but quite inefficient as the IOCP and associations are rebuilt for each call.
+There is small optimization: early exit, when any of the objects is already signalled, with randomized order to make it more fair.
+
+* [example-WaitForUnlimitedObjectsEx.cpp](example-WaitForUnlimitedObjectsEx.cpp) shows the straightforward usage
+
+**[UnlimitedWait.h](UnlimitedWait.h)**  
+is the most efficient way to use this facility along the lines of WaitForMultipleObjectsEx. But instead you build a UnlimitedWait object,
+add event handles, and then repeatedly retrieve signals using a single call. It also allows user to set up callback functions.
+
+* [example-UnlimitedWait.cpp](example-UnlimitedWait.cpp) shows how to construct and use of the batch retrieval
 
 ## Notes
 
+* Implementations provided are experimental, not thoroughly tested, and certainly not ready for production!
 * The API supports waiting for Semaphores, Threads and Processes, not just Events.
+* The API does NOT support acquiring Mutexes.
 * The API does NOT support waiting for ALL object to be set at the same time.
 
 ## Resources

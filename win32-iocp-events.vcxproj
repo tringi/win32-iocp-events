@@ -143,17 +143,25 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="example-WaitForUnlimitedObjectsEx.cpp" />
+    <ClCompile Include="example-UnlimitedWait.cpp" />
+    <ClCompile Include="example-WaitForUnlimitedObjectsEx.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="example.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="UnlimitedWait.cpp" />
     <ClCompile Include="WaitForUnlimitedObjectsEx.cpp" />
     <ClCompile Include="win32-iocp-events.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="UnlimitedWait.h" />
     <ClInclude Include="WaitForUnlimitedObjectsEx.h" />
     <ClInclude Include="win32-iocp-events.h" />
   </ItemGroup>
