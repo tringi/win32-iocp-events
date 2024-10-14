@@ -47,6 +47,7 @@ add event handles, and then repeatedly retrieve signals using a single call. It 
 ## Notes
 
 * Implementations provided are experimental, not thoroughly tested, and certainly not ready for production!
+* These implementations have different semantics to WaitForMultipleObjectsEx. Most importantly signalled object statuses are not coalesced.
 * The API supports waiting for Semaphores, Threads and Processes, not just Events.
 * The API does NOT support acquiring Mutexes.
 * The API does NOT support waiting for ALL object to be set at the same time.
