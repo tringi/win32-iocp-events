@@ -82,7 +82,7 @@ int main (int argc, char ** argv) {
             HANDLE hEvent = CreateEvent (NULL, FALSE, FALSE, NULL);
             if (hEvent) {
 
-                if (AddUnlimitedWaitObject (wait, hEvent, OnObjectSignalled, (PVOID) (std::uintptr_t) i)) {
+                if (AddUnlimitedWaitObject (wait, hEvent, OnObjectSignalled, (PVOID) (std::uintptr_t) i, 0)) {
                     events.push_back (hEvent);
                 } else {
                     std::printf ("Object %u failed to AddUnlimitedWaitObject, error %lu\n", i, GetLastError ());

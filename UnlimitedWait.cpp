@@ -47,6 +47,7 @@ extern "C" {
     struct UnlimitedWaitSlot {
         HANDLE hWaitPacket;
         HANDLE hObject;
+        DWORD  dwFlags;
     };
 }
 
@@ -130,6 +131,10 @@ BOOL WINAPI DeleteUnlimitedWait (
         SIZE_T nSlots = HeapSize (hHeap, 0, instance->slots) / sizeof (UnlimitedWaitSlot);
         while (nSlots--) {
             CloseHandle (instance->slots [nSlots].hWaitPacket);
+
+            if (instance->slots [nSlots].dwFlags & UNLIMITED_WAIT_OBJECT_CLOSE_HANDLE) {
+                CloseHandle (instance->slots [nSlots].hObject);
+            }
         }
 
         if (!HeapFree (hHeap, 0, instance->slots)) {
@@ -169,7 +174,8 @@ BOOL WINAPI AddUnlimitedWaitObject (
     _In_ UnlimitedWait * instance,
     _In_ HANDLE hObjectHandle,
     _In_opt_ PUNLIMITED_WAIT_OBJECT_CALLBACK ptrCallbackFunction,
-    _In_opt_ PVOID lpObjectContext
+    _In_opt_ PVOID lpObjectContext,
+    _In_     DWORD dwFlags
 ) {
     if (!instance) {
         SetLastError (ERROR_INVALID_HANDLE);
@@ -198,6 +204,7 @@ BOOL WINAPI AddUnlimitedWaitObject (
         instance->slots = (UnlimitedWaitSlot *) newSlots;
         instance->slots [nSlots].hWaitPacket = NULL;
         instance->slots [nSlots].hObject = NULL;
+        instance->slots [nSlots].dwFlags = dwFlags;
 
         HRESULT hr = NtCreateWaitCompletionPacket (&instance->slots [nSlots].hWaitPacket, GENERIC_ALL, NULL);
         if (SUCCEEDED (hr)) {

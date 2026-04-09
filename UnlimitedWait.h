@@ -39,6 +39,10 @@ BOOL WINAPI DeleteUnlimitedWait (
     _In_ UnlimitedWait * hUnlimitedWait
 );
 
+// UNLIMITED_WAIT flags
+
+#define UNLIMITED_WAIT_OBJECT_CLOSE_HANDLE  0x00000001
+
 // AddUnlimitedWaitObject
 //  - adds object handle to 'UnlimitedWait' and starts consuming signalled state changes
 //  - parameters:
@@ -47,6 +51,9 @@ BOOL WINAPI DeleteUnlimitedWait (
 //                               when the associated object signalled status is retrieved
 //     - 'lpObjectContext' - pointer, that is passed to 'ptrCallbackFunction' (if provided) and
 //                           returned by WaitUnlimitedWait(Ex) to identify signalled objects
+//     - 'dwFlags' - additional behavior options, can be one or more of:
+//                 - UNLIMITED_WAIT_OBJECT_CLOSE_HANDLE - calls CloseHandle on 'hObjectHandle'
+//                                                        in DeleteUnlimitedWait
 //  - returns: TRUE - on success
 //             FALSE - on failure, call GetLastError () to get more information:
 //                   - may contain HRESULT on unexpected failures
@@ -56,7 +63,8 @@ BOOL WINAPI AddUnlimitedWaitObject (
     _In_     UnlimitedWait * hUnlimitedWait,
     _In_     HANDLE          hObjectHandle,
     _In_opt_ PUNLIMITED_WAIT_OBJECT_CALLBACK ptrCallbackFunction,
-    _In_opt_ PVOID           lpObjectContext
+    _In_opt_ PVOID           lpObjectContext,
+    _In_     DWORD           dwFlags
 );
 
 // RemoveUnlimitedWaitObject
@@ -94,7 +102,7 @@ BOOL WINAPI RemoveUnlimitedWaitObject (
 //        - successes
 //           - WAIT_IO_COMPLETION - User APC was retrieved and processed, due to 'bAlertable' being TRUE
 //           - WAIT_TIMEOUT - 'dwMilliseconds' elapsed without any completion or User APC
-//        - all other errors are hard values and :
+//        - all other values are hard errors:
 //           - ERROR_ABANDONED_WAIT_0 - UnlimitedWait was deleted from underneath the function
 //
 _Success_ (return != FALSE)
@@ -125,7 +133,7 @@ BOOL WINAPI WaitUnlimitedWait (
 //        - successes
 //           - WAIT_IO_COMPLETION - User APC was retrieved and processed, due to 'bAlertable' being TRUE
 //           - WAIT_TIMEOUT - 'dwMilliseconds' elapsed without any completion or User APC
-//        - all other errors are hard values and :
+//        - all other values are hard errors:
 //           - ERROR_ABANDONED_WAIT_0 - UnlimitedWait was deleted from underneath the function
 //
 _Success_ (return != FALSE)
