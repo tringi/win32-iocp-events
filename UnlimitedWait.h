@@ -56,6 +56,7 @@ BOOL WINAPI DeleteUnlimitedWait (
 //                                                        in DeleteUnlimitedWait
 //  - returns: TRUE - on success
 //             FALSE - on failure, call GetLastError () to get more information:
+//                   - allocation errors provide ERROR_NOT_ENOUGH_MEMORY
 //                   - may contain HRESULT on unexpected failures
 //
 _Success_ (return != FALSE)

@@ -26,7 +26,7 @@ extern "C" {
     DWORD ConvertHResult (HRESULT hr, HANDLE h) {
         switch (hr) {
             case STATUS_NO_MEMORY:
-                return ERROR_OUTOFMEMORY;
+                return ERROR_NOT_ENOUGH_MEMORY;
 
             case STATUS_INVALID_HANDLE: // not valid handle passed for hIOCP
             case STATUS_OBJECT_TYPE_MISMATCH: // incorrect handle passed for hIOCP
@@ -78,12 +78,12 @@ UnlimitedWait * WINAPI CreateUnlimitedWait (
             instance->pfnTimeoutCallback = pfnTimeoutCallback;
             instance->pfnApcWakeCallback = pfnApcWakeCallback;
 
-            if (nPreAllocatedSlots == 0) {
-                nPreAllocatedSlots = 8;
-            }
-
-            instance->slots = (UnlimitedWaitSlot *) HeapAlloc (hHeap, 0, nPreAllocatedSlots * sizeof (UnlimitedWaitSlot));
+            instance->slots = (UnlimitedWaitSlot *) HeapAlloc (hHeap, 0, nPreAllocatedSlots ? nPreAllocatedSlots * sizeof (UnlimitedWaitSlot) : 1);
             if (instance->slots) {
+
+                if (nPreAllocatedSlots == 0) {
+                    return instance;
+                }
 
                 HRESULT hr = 0;
                 DWORD nCreatedPackets = 0;
@@ -100,15 +100,11 @@ UnlimitedWait * WINAPI CreateUnlimitedWait (
                 }
                 HeapFree (hHeap, 0, instance->slots);
                 SetLastError (ConvertHResult (hr, NULL));
-            } else {
-                SetLastError (ERROR_OUTOFMEMORY);
             }
 
             CloseHandle (instance->hIOCP);
         }
         HeapFree (hHeap, 0, instance);
-    } else {
-        SetLastError (ERROR_OUTOFMEMORY);
     }
     return NULL;
 }
@@ -217,14 +213,10 @@ BOOL WINAPI AddUnlimitedWaitObject (
             NtCancelWaitCompletionPacket (instance->slots [nSlots].hWaitPacket, TRUE);
 
         } else {
-            if (auto revertedSlots = HeapReAlloc (hHeap, 0, instance->slots, nSlots * sizeof (UnlimitedWaitSlot))) {
+            if (auto revertedSlots = HeapReAlloc (hHeap, 0, instance->slots, nSlots ? nSlots * sizeof (UnlimitedWaitSlot) : 1)) {
                 instance->slots = (UnlimitedWaitSlot *) revertedSlots;
-            } else {
-                SetLastError (ERROR_OUTOFMEMORY);
             }
         }
-    } else {
-        SetLastError (ERROR_OUTOFMEMORY);
     }
 
     ReleaseSRWLockExclusive (&instance->srwLock);
@@ -392,7 +384,6 @@ BOOL WINAPI WaitUnlimitedWaitEx (
         hHeap = GetProcessHeap ();
         oResults = (OVERLAPPED_ENTRY *) HeapAlloc (hHeap, 0, ulCount * sizeof (OVERLAPPED_ENTRY));
         if (!oResults) {
-            SetLastError (ERROR_OUTOFMEMORY);
             return FALSE;
         }
     }
