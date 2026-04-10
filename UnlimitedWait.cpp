@@ -1,6 +1,9 @@
 #include "UnlimitedWait.h"
 #include <Winternl.h>
-#include <ntstatus.h>
+
+#ifndef STATUS_INVALID_PARAMETER_3
+#define STATUS_INVALID_PARAMETER_3       ((NTSTATUS)0xC00000F1L)
+#endif
 
 extern "C" {
     WINBASEAPI NTSTATUS WINAPI NtCreateWaitCompletionPacket (
@@ -22,27 +25,6 @@ extern "C" {
         _In_ HANDLE WaitCompletionPacketHandle,
         _In_ BOOLEAN RemoveSignaledPacket
     );
-
-    DWORD ConvertHResult (HRESULT hr, HANDLE h) {
-        switch (hr) {
-            case STATUS_NO_MEMORY:
-                return ERROR_NOT_ENOUGH_MEMORY;
-
-            case STATUS_INVALID_HANDLE: // not valid handle passed for hIOCP
-            case STATUS_OBJECT_TYPE_MISMATCH: // incorrect handle passed for hIOCP
-            case STATUS_INVALID_PARAMETER_1:
-            case STATUS_INVALID_PARAMETER_2:
-                return ERROR_INVALID_PARAMETER;
-
-            case STATUS_INVALID_PARAMETER_3:
-                if (h) {
-                    return ERROR_INVALID_HANDLE;
-                } else {
-                    return ERROR_INVALID_PARAMETER;
-                }
-        }
-        return hr;
-    }
 
     struct UnlimitedWaitSlot {
         HANDLE hWaitPacket;
@@ -85,9 +67,9 @@ UnlimitedWait * WINAPI CreateUnlimitedWait (
                     return instance;
                 }
 
-                HRESULT hr = 0;
+                NTSTATUS status = 0;
                 DWORD nCreatedPackets = 0;
-                while (SUCCEEDED (hr = NtCreateWaitCompletionPacket (&instance->slots [nCreatedPackets].hWaitPacket, GENERIC_ALL, NULL))) {
+                while (SUCCEEDED (status = NtCreateWaitCompletionPacket (&instance->slots [nCreatedPackets].hWaitPacket, GENERIC_ALL, NULL))) {
                     instance->slots [nCreatedPackets].hObject = NULL;
 
                     if (++nCreatedPackets == nPreAllocatedSlots) {
@@ -99,7 +81,7 @@ UnlimitedWait * WINAPI CreateUnlimitedWait (
                     CloseHandle (instance->slots [nCreatedPackets].hWaitPacket);
                 }
                 HeapFree (hHeap, 0, instance->slots);
-                SetLastError (ConvertHResult (hr, NULL));
+                SetLastError (RtlNtStatusToDosError (status));
             }
 
             CloseHandle (instance->hIOCP);
@@ -152,14 +134,18 @@ BOOL WINAPI DeleteUnlimitedWait (
 namespace {
     BOOL SetAssociation (UnlimitedWait * instance, SIZE_T i, HANDLE hObjectHandle, PVOID ptrCallbackFunction, PVOID lpObjectContext) {
         
-        HRESULT hr = NtAssociateWaitCompletionPacket (instance->slots [i].hWaitPacket, instance->hIOCP, hObjectHandle,
-                                                      ptrCallbackFunction, lpObjectContext, 0, i, NULL);
-        if (SUCCEEDED (hr)) {
+        HRESULT status = NtAssociateWaitCompletionPacket (instance->slots [i].hWaitPacket, instance->hIOCP, hObjectHandle,
+                                                          ptrCallbackFunction, lpObjectContext, 0, i, NULL);
+        if (SUCCEEDED (status)) {
             instance->slots [i].hObject = hObjectHandle;
             return TRUE;
 
         } else {
-            SetLastError (ConvertHResult (hr, hObjectHandle));
+            if (status == STATUS_INVALID_PARAMETER_3) {
+                SetLastError (ERROR_INVALID_HANDLE);
+            } else {
+                RtlNtStatusToDosError (status);
+            }
             return FALSE;
         }
     }
@@ -244,8 +230,8 @@ BOOL WINAPI RemoveUnlimitedWaitObject (
     for (SIZE_T i = 0; i != nSlots; ++i) {
 
         if (instance->slots [i].hObject == hObjectHandle) {
-            HRESULT hr = NtCancelWaitCompletionPacket (instance->slots [i].hWaitPacket, !bKeepSignalsEnqueued);
-            BOOL result = SUCCEEDED (hr);
+            HRESULT status = NtCancelWaitCompletionPacket (instance->slots [i].hWaitPacket, !bKeepSignalsEnqueued);
+            BOOL result = SUCCEEDED (status);
 
             if (result) {
                 instance->slots [i].hObject = NULL;
@@ -254,7 +240,7 @@ BOOL WINAPI RemoveUnlimitedWaitObject (
             ReleaseSRWLockExclusive (&instance->srwLock);
 
             if (!result) {
-                SetLastError (ConvertHResult (hr, NULL));
+                SetLastError (RtlNtStatusToDosError (status));
             }
             return result;
         }
